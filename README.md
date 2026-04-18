@@ -4,7 +4,7 @@ Trace mutation fuzzer for [Hekate](https://github.com/oumuamua-labs/hekate) ZK p
 
 Tampers your valid trace, runs preflight checks,
 panics if the tamper goes undetected. If scribble
-doesn't panic, your constraints have a hole.
+panics, your constraints have a hole.
 
 ## What it does
 
