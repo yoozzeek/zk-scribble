@@ -2,5 +2,22 @@
 name = "zk-scribble"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Trace mutation fuzzer for Hekate ZK programs and chiplets. Tampers valid traces and asserts preflight catches every mutation."
+repository = "https://github.com/yoozzeek/zk-scribble"
+keywords = ["zk", "fuzzer", "proptest", "hekate", "trace"]
+categories = ["cryptography", "development-tools::testing"]
 
 [dependencies]
+hekate-math = { version = "0.6.0", default-features = false, features = ["std"] }
+hekate-sdk = { version = "0.27.0", default-features = false, features = ["std", "blake3"] }
+hekate-core = { version = "0.27.0", default-features = false, features = ["std", "blake3"] }
+hekate-program = { version = "0.27.0", default-features = false, features = ["std"] }
+proptest = "1.5"
+
+[dev-dependencies]
+hekate-chiplets = { version = "0.27.0", default-features = false, features = ["std", "blake3"] }
+
+[lib]
+name = "zk_scribble"
+path = "src/lib.rs"
