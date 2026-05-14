@@ -1,6 +1,6 @@
 [package]
 name = "zk-scribble"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 authors = ["Andrei Kochergin"]
@@ -11,13 +11,13 @@ categories = ["cryptography", "development-tools::testing"]
 
 [dependencies]
 hekate-math = { version = "0.6.0", default-features = false, features = ["std"] }
-hekate-sdk = { version = "=0.27.2", default-features = false, features = ["std", "blake3"] }
-hekate-core = { version = "=0.27.2", default-features = false, features = ["std", "blake3"] }
-hekate-program = { version = "=0.27.2", default-features = false, features = ["std"] }
+hekate-sdk = { version = "0.27", default-features = false, features = ["std", "blake3"] }
+hekate-core = { version = "0.27", default-features = false, features = ["std", "blake3"] }
+hekate-program = { version = "0.27", default-features = false, features = ["std"] }
 proptest = "1.5"
 
 [dev-dependencies]
-hekate-gadgets = { version = "=0.27.2", default-features = false, features = ["std", "blake3"] }
+hekate-gadgets = { version = "0.27", default-features = false, features = ["std", "blake3"] }
 
 [lib]
 name = "zk_scribble"
