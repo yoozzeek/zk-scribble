@@ -10,7 +10,7 @@ categories = ["cryptography", "development-tools::testing"]
 
 [dependencies]
 hekate-math = { version = "0.6.0", default-features = false, features = ["std"] }
-hekate-sdk = { path = "../oumuamua/hekate/hekate-sdk", default-features = false, features = ["std", "blake3"] }
+hekate-sdk = { version = "=0.27.0", default-features = false, features = ["std", "blake3"] }
 hekate-core = { version = "=0.27.0", default-features = false, features = ["std", "blake3"] }
 hekate-program = { version = "=0.27.0", default-features = false, features = ["std"] }
 proptest = "1.5"
