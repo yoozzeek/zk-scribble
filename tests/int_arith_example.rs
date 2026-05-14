@@ -8,17 +8,17 @@
 
 use hekate_core::trace::{ColumnTrace, ColumnType, TraceBuilder};
 use hekate_gadgets::{
-    generate_arithmetic_trace, ArithmeticOpcode, CpuArithColumns, CpuIntArithmeticUnit,
-    IntArithmeticChiplet, IntArithmeticLayout, IntArithmeticOp,
+    ArithmeticOpcode, CpuArithColumns, CpuIntArithmeticUnit, IntArithmeticChiplet,
+    IntArithmeticLayout, IntArithmeticOp, generate_arithmetic_trace,
 };
-use hekate_math::{Bit, Block128, Block32, TowerField};
+use hekate_math::{Bit, Block32, Block128, TowerField};
 use hekate_program::chiplet::ChipletDef;
-use hekate_program::constraint::builder::ConstraintSystem;
 use hekate_program::constraint::ConstraintAst;
+use hekate_program::constraint::builder::ConstraintSystem;
 use hekate_program::permutation::PermutationCheckSpec;
 use hekate_program::{Air, Program, ProgramInstance, ProgramWitness};
 use zk_scribble::{
-    assert_all_caught, check_single_mutation, Mutation, MutationKind, ScribbleConfig, Target,
+    Mutation, MutationKind, ScribbleConfig, Target, assert_all_caught, check_single_mutation,
 };
 
 type F = Block128;

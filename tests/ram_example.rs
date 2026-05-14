@@ -8,15 +8,15 @@
 //! row-position selector.
 
 use hekate_core::trace::{ColumnTrace, ColumnType, TraceBuilder};
-use hekate_gadgets::{generate_ram_trace, CpuMemColumns, CpuMemoryUnit, MemoryEvent, RamChiplet};
-use hekate_math::{Bit, Block128, Block32, TowerField};
+use hekate_gadgets::{CpuMemColumns, CpuMemoryUnit, MemoryEvent, RamChiplet, generate_ram_trace};
+use hekate_math::{Bit, Block32, Block128, TowerField};
 use hekate_program::chiplet::ChipletDef;
-use hekate_program::constraint::builder::ConstraintSystem;
 use hekate_program::constraint::ConstraintAst;
+use hekate_program::constraint::builder::ConstraintSystem;
 use hekate_program::permutation::PermutationCheckSpec;
 use hekate_program::{Air, Program, ProgramInstance, ProgramWitness};
 use zk_scribble::{
-    assert_all_caught, check_single_mutation, Mutation, MutationKind, ScribbleConfig, Target,
+    Mutation, MutationKind, ScribbleConfig, Target, assert_all_caught, check_single_mutation,
 };
 
 type F = Block128;
