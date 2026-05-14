@@ -1,5 +1,5 @@
 //! Layer-1 + Layer-2 scribble coverage for the
-//! RAM chiplet from `hekate-chiplets`. Random
+//! RAM chiplet from `hekate-gadgets`. Random
 //! shallow tampers plus hand-crafted exploits
 //! that target the chiplet's load-bearing
 //! invariants: address-sorted ordering, value
@@ -7,16 +7,16 @@
 //! shadow columns, and the committed Q_LAST
 //! row-position selector.
 
-use hekate_chiplets::{CpuMemColumns, CpuMemoryUnit, MemoryEvent, RamChiplet, generate_ram_trace};
 use hekate_core::trace::{ColumnTrace, ColumnType, TraceBuilder};
-use hekate_math::{Bit, Block32, Block128, TowerField};
+use hekate_gadgets::{generate_ram_trace, CpuMemColumns, CpuMemoryUnit, MemoryEvent, RamChiplet};
+use hekate_math::{Bit, Block128, Block32, TowerField};
 use hekate_program::chiplet::ChipletDef;
-use hekate_program::constraint::ConstraintAst;
 use hekate_program::constraint::builder::ConstraintSystem;
+use hekate_program::constraint::ConstraintAst;
 use hekate_program::permutation::PermutationCheckSpec;
 use hekate_program::{Air, Program, ProgramInstance, ProgramWitness};
 use zk_scribble::{
-    Mutation, MutationKind, ScribbleConfig, Target, assert_all_caught, check_single_mutation,
+    assert_all_caught, check_single_mutation, Mutation, MutationKind, ScribbleConfig, Target,
 };
 
 type F = Block128;

@@ -1,24 +1,24 @@
 //! Layer-1 + Layer-2 scribble coverage for the
 //! IntArithmeticChiplet (u32 mode) from
-//! `hekate-chiplets`. Random shallow tampers
+//! `hekate-gadgets`. Random shallow tampers
 //! plus hand-crafted exploits that target the
 //! chiplet's load-bearing invariants: opcode
 //! gating, result equality with bit-decomposed
 //! operands, and padding-row shadow columns.
 
-use hekate_chiplets::{
-    ArithmeticOpcode, CpuArithColumns, CpuIntArithmeticUnit, IntArithmeticChiplet,
-    IntArithmeticLayout, IntArithmeticOp, generate_arithmetic_trace,
-};
 use hekate_core::trace::{ColumnTrace, ColumnType, TraceBuilder};
-use hekate_math::{Bit, Block32, Block128, TowerField};
+use hekate_gadgets::{
+    generate_arithmetic_trace, ArithmeticOpcode, CpuArithColumns, CpuIntArithmeticUnit,
+    IntArithmeticChiplet, IntArithmeticLayout, IntArithmeticOp,
+};
+use hekate_math::{Bit, Block128, Block32, TowerField};
 use hekate_program::chiplet::ChipletDef;
-use hekate_program::constraint::ConstraintAst;
 use hekate_program::constraint::builder::ConstraintSystem;
+use hekate_program::constraint::ConstraintAst;
 use hekate_program::permutation::PermutationCheckSpec;
 use hekate_program::{Air, Program, ProgramInstance, ProgramWitness};
 use zk_scribble::{
-    Mutation, MutationKind, ScribbleConfig, Target, assert_all_caught, check_single_mutation,
+    assert_all_caught, check_single_mutation, Mutation, MutationKind, ScribbleConfig, Target,
 };
 
 type F = Block128;
