@@ -62,7 +62,15 @@ impl Air<F> for ArithTestProgram {
 
     fn constraint_ast(&self) -> ConstraintAst<F> {
         let cs = ConstraintSystem::<F>::new();
-        cs.assert_boolean(cs.col(CpuArithColumns::SELECTOR));
+
+        let selector = cs.col(CpuArithColumns::SELECTOR);
+        cs.assert_boolean(selector);
+
+        let not_active = cs.one() + selector;
+        cs.assert_zero_when(not_active, cs.col(CpuArithColumns::VAL_A));
+        cs.assert_zero_when(not_active, cs.col(CpuArithColumns::VAL_B));
+        cs.assert_zero_when(not_active, cs.col(CpuArithColumns::VAL_RES));
+        cs.assert_zero_when(not_active, cs.col(CpuArithColumns::OPCODE));
 
         cs.build()
     }
@@ -219,7 +227,7 @@ fn arith_padding_fixture_survives_chaos() {
     let (air, instance, witness) = setup_padding_fixture();
 
     let config = ScribbleConfig::default()
-        .target(Target::Chiplet(0))
+        .target(Target::Main)
         .mutations([
             MutationKind::BitFlip,
             MutationKind::OutOfBounds,
