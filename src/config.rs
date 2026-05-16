@@ -1,9 +1,9 @@
 use crate::mutation::MutationKind;
 use crate::target::Target;
 
-/// Empty `targets` / `kinds` / `include_cols`
-/// mean "no restriction";
-/// populated lists are filters.
+/// Empty `targets` / `kinds` / `include_*`
+/// mean "no restriction"; populated lists
+/// are filters.
 #[derive(Clone, Debug)]
 pub struct ScribbleConfig {
     cases: u32,
@@ -11,6 +11,8 @@ pub struct ScribbleConfig {
     kinds: Vec<MutationKind>,
     include_cols: Vec<usize>,
     exclude_cols: Vec<usize>,
+    include_rows: Vec<usize>,
+    exclude_rows: Vec<usize>,
 }
 
 impl Default for ScribbleConfig {
@@ -21,6 +23,8 @@ impl Default for ScribbleConfig {
             kinds: Vec::new(),
             include_cols: Vec::new(),
             exclude_cols: Vec::new(),
+            include_rows: Vec::new(),
+            exclude_rows: Vec::new(),
         }
     }
 }
@@ -56,6 +60,16 @@ impl ScribbleConfig {
         self
     }
 
+    pub fn include_rows<I: IntoIterator<Item = usize>>(mut self, rows: I) -> Self {
+        self.include_rows = rows.into_iter().collect();
+        self
+    }
+
+    pub fn exclude_rows<I: IntoIterator<Item = usize>>(mut self, rows: I) -> Self {
+        self.exclude_rows = rows.into_iter().collect();
+        self
+    }
+
     pub fn case_count(&self) -> u32 {
         self.cases
     }
@@ -74,5 +88,13 @@ impl ScribbleConfig {
         }
 
         !self.exclude_cols.contains(&col)
+    }
+
+    pub fn is_row_allowed(&self, row: usize) -> bool {
+        if !self.include_rows.is_empty() && !self.include_rows.contains(&row) {
+            return false;
+        }
+
+        !self.exclude_rows.contains(&row)
     }
 }
