@@ -917,7 +917,7 @@ dependencies = [
 
 [[package]]
 name = "zk-scribble"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "hekate-core",
  "hekate-gadgets",
