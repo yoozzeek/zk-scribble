@@ -7,20 +7,21 @@ use hekate_program::ProgramWitness;
 use proptest::prelude::*;
 use proptest::sample::select;
 use proptest::strategy::{BoxedStrategy, Union};
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 struct Segment {
     target: Target,
-    allowed_cols: Vec<usize>,
-    num_rows: usize,
+    allowed_cols: Arc<[usize]>,
+    allowed_rows: Arc<[usize]>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct Cell {
     target: Target,
     col: usize,
     col_type: ColumnType,
-    num_rows: usize,
+    allowed_rows: Arc<[usize]>,
 }
 
 /// Proptest strategy producing Layer-1
@@ -74,10 +75,12 @@ pub fn mutation_strategy<F: TowerField>(
         }
     }
 
-    let row_targets: Vec<(Target, usize)> = shapes
+    let row_targets: Vec<(Target, Arc<[usize]>)> = shapes
         .iter()
-        .filter(|(_, n, _)| *n >= 2)
-        .map(|(t, n, _)| (*t, *n))
+        .filter_map(|(t, n, _)| {
+            let rows: Vec<usize> = (0..*n).filter(|r| config.is_row_allowed(*r)).collect();
+            (rows.len() >= 2).then_some((*t, Arc::from(rows)))
+        })
         .collect();
 
     if config.is_kind_allowed(MutationKind::SwapRows) && !row_targets.is_empty() {
@@ -89,7 +92,10 @@ pub fn mutation_strategy<F: TowerField>(
     }
 
     if subs.is_empty() {
-        panic!("mutation_strategy: config + witness produced no candidate mutations");
+        panic!(
+            "mutation_strategy: no candidate mutations.\n  config = {:?}\n  witness shapes = {:?}",
+            config, shapes,
+        );
     }
 
     Union::new(subs).boxed()
@@ -136,9 +142,15 @@ fn cells_for(
 ) -> Vec<Cell> {
     let mut out = Vec::new();
     for (target, num_rows, col_types) in shapes {
-        if *num_rows == 0 {
+        let allowed_rows: Vec<usize> = (0..*num_rows)
+            .filter(|r| config.is_row_allowed(*r))
+            .collect();
+
+        if allowed_rows.is_empty() {
             continue;
         }
+
+        let allowed_rows: Arc<[usize]> = Arc::from(allowed_rows);
 
         for (col, t) in col_types.iter().enumerate() {
             if !config.is_col_allowed(col) {
@@ -153,7 +165,7 @@ fn cells_for(
                 target: *target,
                 col,
                 col_type: *t,
-                num_rows: *num_rows,
+                allowed_rows: Arc::clone(&allowed_rows),
             });
         }
     }
@@ -183,12 +195,14 @@ fn bitflip_strategy(cells: Vec<Cell>) -> BoxedStrategy<Mutation> {
     select(cells)
         .prop_flat_map(|cell| {
             let max = col_mask(cell.col_type);
-            (Just(cell), 0..cell.num_rows, 1u128..=max)
+            let n = cell.allowed_rows.len();
+
+            (Just(cell), 0..n, 1u128..=max)
         })
-        .prop_map(|(cell, row, mask)| Mutation::BitFlip {
+        .prop_map(|(cell, row_idx, mask)| Mutation::BitFlip {
             target: cell.target,
             col: cell.col,
-            row,
+            row: cell.allowed_rows[row_idx],
             mask,
         })
         .boxed()
@@ -196,11 +210,14 @@ fn bitflip_strategy(cells: Vec<Cell>) -> BoxedStrategy<Mutation> {
 
 fn out_of_bounds_strategy(cells: Vec<Cell>) -> BoxedStrategy<Mutation> {
     select(cells)
-        .prop_flat_map(|cell| (Just(cell), 0..cell.num_rows, any::<u128>()))
-        .prop_map(|(cell, row, value)| Mutation::OutOfBounds {
+        .prop_flat_map(|cell| {
+            let n = cell.allowed_rows.len();
+            (Just(cell), 0..n, any::<u128>())
+        })
+        .prop_map(|(cell, row_idx, value)| Mutation::OutOfBounds {
             target: cell.target,
             col: cell.col,
-            row,
+            row: cell.allowed_rows[row_idx],
             value,
         })
         .boxed()
@@ -208,35 +225,44 @@ fn out_of_bounds_strategy(cells: Vec<Cell>) -> BoxedStrategy<Mutation> {
 
 fn flip_selector_strategy(cells: Vec<Cell>) -> BoxedStrategy<Mutation> {
     select(cells)
-        .prop_flat_map(|cell| (Just(cell), 0..cell.num_rows))
-        .prop_map(|(cell, row)| Mutation::FlipSelector {
+        .prop_flat_map(|cell| {
+            let n = cell.allowed_rows.len();
+            (Just(cell), 0..n)
+        })
+        .prop_map(|(cell, row_idx)| Mutation::FlipSelector {
             target: cell.target,
             col: cell.col,
-            row,
+            row: cell.allowed_rows[row_idx],
         })
         .boxed()
 }
 
-fn swap_rows_strategy(targets: Vec<(Target, usize)>) -> BoxedStrategy<Mutation> {
+fn swap_rows_strategy(targets: Vec<(Target, Arc<[usize]>)>) -> BoxedStrategy<Mutation> {
     select(targets)
-        .prop_flat_map(|(target, num_rows)| (Just(target), 0..num_rows, 0..num_rows))
-        .prop_filter("row_a != row_b", |(_, a, b)| a != b)
-        .prop_map(|(target, row_a, row_b)| Mutation::SwapRows {
+        .prop_flat_map(|(target, rows)| {
+            let n = rows.len();
+            (Just(target), Just(rows), 0..n, 0..n)
+        })
+        .prop_filter("row_a != row_b", |(_, _, a, b)| a != b)
+        .prop_map(|(target, rows, ia, ib)| Mutation::SwapRows {
             target,
-            row_a,
-            row_b,
+            row_a: rows[ia],
+            row_b: rows[ib],
         })
         .boxed()
 }
 
-fn duplicate_row_strategy(targets: Vec<(Target, usize)>) -> BoxedStrategy<Mutation> {
+fn duplicate_row_strategy(targets: Vec<(Target, Arc<[usize]>)>) -> BoxedStrategy<Mutation> {
     select(targets)
-        .prop_flat_map(|(target, num_rows)| (Just(target), 0..num_rows, 0..num_rows))
-        .prop_filter("src_row != dst_row", |(_, s, d)| s != d)
-        .prop_map(|(target, src_row, dst_row)| Mutation::DuplicateRow {
+        .prop_flat_map(|(target, rows)| {
+            let n = rows.len();
+            (Just(target), Just(rows), 0..n, 0..n)
+        })
+        .prop_filter("src_row != dst_row", |(_, _, s, d)| s != d)
+        .prop_map(|(target, rows, is, id)| Mutation::DuplicateRow {
             target,
-            src_row,
-            dst_row,
+            src_row: rows[is],
+            dst_row: rows[id],
         })
         .boxed()
 }
@@ -280,13 +306,18 @@ fn segments_for(
             let allowed_cols: Vec<usize> = (0..col_types.len())
                 .filter(|c| config.is_col_allowed(*c))
                 .collect();
-            if allowed_cols.is_empty() || *num_rows == 0 {
+            let allowed_rows: Vec<usize> = (0..*num_rows)
+                .filter(|r| config.is_row_allowed(*r))
+                .collect();
+
+            if allowed_cols.is_empty() || allowed_rows.is_empty() {
                 return None;
             }
+
             Some(Segment {
                 target: *target,
-                allowed_cols,
-                num_rows: *num_rows,
+                allowed_cols: Arc::from(allowed_cols),
+                allowed_rows: Arc::from(allowed_rows),
             })
         })
         .collect()
@@ -296,13 +327,15 @@ fn row_segment_zero_strategy(segments: Vec<Segment>) -> BoxedStrategy<Mutation> 
     select(segments)
         .prop_flat_map(|seg| {
             let n_cols = seg.allowed_cols.len();
+            let n_rows = seg.allowed_rows.len();
             let col_idx = proptest::collection::vec(0..n_cols, 1..=n_cols.min(8));
-            let rows = proptest::collection::vec(0..seg.num_rows, 1..=seg.num_rows.min(8));
+            let row_idx = proptest::collection::vec(0..n_rows, 1..=n_rows.min(8));
 
-            (Just(seg), rows, col_idx)
+            (Just(seg), row_idx, col_idx)
         })
-        .prop_map(|(seg, mut rows, idx)| {
+        .prop_map(|(seg, row_idx, idx)| {
             let mut cols: Vec<usize> = idx.into_iter().map(|i| seg.allowed_cols[i]).collect();
+            let mut rows: Vec<usize> = row_idx.into_iter().map(|i| seg.allowed_rows[i]).collect();
 
             rows.sort_unstable();
             rows.dedup();
