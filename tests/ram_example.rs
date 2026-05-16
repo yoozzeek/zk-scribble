@@ -19,6 +19,11 @@ use zk_scribble::{
     Mutation, MutationKind, ScribbleConfig, Target, assert_all_caught, check_single_mutation,
 };
 
+// AUX_INV:
+// free witness on same-addr transitions
+// (d=0 zeroes the gate).
+const PHY_AUX_INV: usize = 15;
+
 type F = Block128;
 
 #[derive(Clone)]
@@ -176,6 +181,9 @@ fn ram_chiplet_survives_chaos() {
             MutationKind::DuplicateRow,
             MutationKind::SwapRows,
         ])
+        // PHY_AUX_INV is unconstrained on inactive
+        // gates; random mutations there escape.
+        .exclude_cols([PHY_AUX_INV])
         .cases(256);
 
     assert_all_caught(&air, &instance, &witness, config);
@@ -185,6 +193,8 @@ fn ram_chiplet_survives_chaos() {
 fn ram_padding_fixture_survives_chaos() {
     let (air, instance, witness) = setup_padding_fixture();
 
+    // Rows 3..8 are SELECTOR=0 padding
+    // (bus silenced, cells free).
     let config = ScribbleConfig::default()
         .target(Target::Chiplet(0))
         .mutations([
@@ -193,6 +203,10 @@ fn ram_padding_fixture_survives_chaos() {
             MutationKind::FlipSelector,
             MutationKind::DuplicateRow,
         ])
+        // PHY_AUX_INV is unconstrained on inactive
+        // gates; random mutations there escape.
+        .exclude_cols([PHY_AUX_INV])
+        .include_rows(0..3)
         .cases(512);
 
     assert_all_caught(&air, &instance, &witness, config);
@@ -211,6 +225,9 @@ fn ram_consistency_window_survives_chaos() {
             MutationKind::DuplicateRow,
             MutationKind::SwapRows,
         ])
+        // PHY_AUX_INV is unconstrained on inactive
+        // gates; random mutations there escape.
+        .exclude_cols([PHY_AUX_INV])
         .cases(256);
 
     assert_all_caught(&air, &instance, &witness, config);
